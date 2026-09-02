@@ -1,0 +1,39 @@
+name: Build KICS GitHub Action image with Node.js
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA of Checkmarx/kics-github-action to build"
+        required: false
+        default: "master"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Checkmarx/kics-github-action
+        uses: actions/checkout@v4
+        with:
+          repository: Checkmarx/kics-github-action
+          ref: ${{ inputs.ref }}
+          path: kics-github-action
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build base image
+        working-directory: kics-github-action
+        run: docker build -t kics-github-action:base .
+
+      - name: Install nodejs/npm into built image
+        run: |
+          container_id=$(docker create --entrypoint sh kics-github-action:base -c "apk add --update nodejs npm")
+          docker start -a "$container_id"
+          docker commit "$container_id" kics-github-action:with-node
+          docker rm "$container_id"
+
+      - name: Verify nodejs/npm installed
+        run: |
+          docker run --rm --entrypoint node kics-github-action:with-node --version
+          docker run --rm --entrypoint npm kics-github-action:with-node --version
