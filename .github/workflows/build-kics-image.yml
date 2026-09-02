@@ -28,7 +28,7 @@ jobs:
 
       - name: Install nodejs/npm into built image
         run: |
-          container_id=$(docker create --entrypoint sh kics-github-action:base -c "apk add --update nodejs npm")
+          container_id=$(docker create --entrypoint sh kics-github-action:base -c "apk add --update nodejs npm; npm ci")
           docker start -a "$container_id"
           docker commit "$container_id" kics-github-action:with-node
           docker rm "$container_id"
